@@ -15,95 +15,83 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onScoreUpdate }) => 
   const requestRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   
-  // Ref-based state for performance
+  // Refs for performance-sensitive physics data
   const puck = useRef<Entity>({ x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2, radius: PUCK_RADIUS, velocity: { x: 0, y: 0 }, mass: PUCK_MASS });
-  const player = useRef<Entity>({ x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT - 200, radius: PADDLE_RADIUS, velocity: { x: 0, y: 0 }, mass: PADDLE_MASS });
-  const ai = useRef<Entity>({ x: CANVAS_WIDTH / 2, y: 200, radius: PADDLE_RADIUS, velocity: { x: 0, y: 0 }, mass: PADDLE_MASS });
+  const player = useRef<Entity>({ x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT - 250, radius: PADDLE_RADIUS, velocity: { x: 0, y: 0 }, mass: PADDLE_MASS });
+  const ai = useRef<Entity>({ x: CANVAS_WIDTH / 2, y: 250, radius: PADDLE_RADIUS, velocity: { x: 0, y: 0 }, mass: PADDLE_MASS });
   
   const isResetting = useRef<boolean>(false);
   const inputTarget = useRef<{x: number, y: number} | null>(null);
-  const [goalOverlay, setGoalOverlay] = useState<{ text: string } | null>(null);
+  const [goalOverlay, setGoalOverlay] = useState<string | null>(null);
 
   const GOAL_LEFT_X = (CANVAS_WIDTH - GOAL_WIDTH) / 2;
   const GOAL_RIGHT_X = (CANVAS_WIDTH + GOAL_WIDTH) / 2;
-  const POST_RADIUS = 22;
+  const POST_RADIUS = 25;
 
-  const resetPositions = (scorer: 'player' | 'ai') => {
+  const resetPuck = (scorer: 'player' | 'ai') => {
     isResetting.current = true;
-    setGoalOverlay({ text: scorer === 'player' ? 'GOAL!' : 'AI GOAL!' });
+    setGoalOverlay(scorer === 'player' ? 'YOU SCORE!' : 'AI SCORED!');
 
-    // Stop movement
     puck.current.velocity = { x: 0, y: 0 };
     player.current.velocity = { x: 0, y: 0 };
     ai.current.velocity = { x: 0, y: 0 };
 
-    // Reset center
     puck.current.x = CANVAS_WIDTH / 2;
     puck.current.y = CANVAS_HEIGHT / 2;
     player.current.x = CANVAS_WIDTH / 2;
-    player.current.y = CANVAS_HEIGHT - 200;
+    player.current.y = CANVAS_HEIGHT - 250;
     ai.current.x = CANVAS_WIDTH / 2;
-    ai.current.y = 200;
+    ai.current.y = 250;
 
     inputTarget.current = null;
 
     setTimeout(() => {
         setGoalOverlay(null);
         isResetting.current = false;
-        // Serve puck towards the one who was scored on
-        const dirY = scorer === 'player' ? 1 : -1;
-        puck.current.velocity = { x: (Math.random() - 0.5) * 10, y: dirY * 10 };
-    }, 1000);
+        const serveDir = scorer === 'player' ? 1 : -1;
+        puck.current.velocity = { x: (Math.random() - 0.5) * 15, y: serveDir * 12 };
+    }, 1200);
   };
 
-  const resolveCollision = (e1: Entity, e2: Entity) => {
-    const dx = e2.x - e1.x;
-    const dy = e2.y - e1.y;
+  const resolvePaddleCollision = (pdl: Entity, pck: Entity) => {
+    const dx = pck.x - pdl.x;
+    const dy = pck.y - pdl.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    const minDist = e1.radius + e2.radius;
+    const minDist = pdl.radius + pck.radius;
 
     if (distance < minDist) {
-      const angle = Math.atan2(dy, dx);
-      const sin = Math.sin(angle);
-      const cos = Math.cos(angle);
+      const nx = dx / distance;
+      const ny = dy / distance;
 
-      // Position correction to prevent overlap
+      // Position correction to prevent tunneling/sticking
       const overlap = minDist - distance;
-      const totalMass = e1.mass + e2.mass;
-      const ratio1 = e2.mass / totalMass;
-      const ratio2 = e1.mass / totalMass;
+      pck.x += nx * (overlap + 1);
+      pck.y += ny * (overlap + 1);
 
-      // In air hockey, paddles are usually "immovable" by the puck but we use mass to simulate bounce
-      // Here we assume e1 is the paddle and e2 is the puck
-      e2.x += cos * (overlap + 0.5);
-      e2.y += sin * (overlap + 0.5);
-
-      // Velocity reflection
       const relativeVelocity = {
-        x: e2.velocity.x - e1.velocity.x,
-        y: e2.velocity.y - e1.velocity.y
+        x: pck.velocity.x - pdl.velocity.x,
+        y: pck.velocity.y - pdl.velocity.y
       };
 
-      const velAlongNormal = relativeVelocity.x * cos + relativeVelocity.y * sin;
+      const velAlongNormal = relativeVelocity.x * nx + relativeVelocity.y * ny;
       if (velAlongNormal > 0) return;
 
-      const restitution = 1.1; // Energy boost
-      const impulseScalar = -(1 + restitution) * velAlongNormal;
-      const impulse = impulseScalar / (1 / e1.mass + 1 / e2.mass);
+      const bounce = 1.15; // High performance bounce
+      const impulse = -(1 + bounce) * velAlongNormal / (1 / pdl.mass + 1 / pck.mass);
 
-      e2.velocity.x += (impulse / e2.mass) * cos;
-      e2.velocity.y += (impulse / e2.mass) * sin;
+      pck.velocity.x += (impulse / pck.mass) * nx;
+      pck.velocity.y += (impulse / pck.mass) * ny;
 
-      // Speed limit
-      const speed = Math.sqrt(e2.velocity.x**2 + e2.velocity.y**2);
-      if (speed > MAX_SPEED) {
-        e2.velocity.x = (e2.velocity.x / speed) * MAX_SPEED;
-        e2.velocity.y = (e2.velocity.y / speed) * MAX_SPEED;
+      // Cap speed for playability
+      const currentSpeed = Math.sqrt(pck.velocity.x**2 + pck.velocity.y**2);
+      if (currentSpeed > MAX_SPEED) {
+        pck.velocity.x = (pck.velocity.x / currentSpeed) * MAX_SPEED;
+        puck.current.velocity.y = (pck.velocity.y / currentSpeed) * MAX_SPEED;
       }
     }
   };
 
-  const checkBoundaries = (dt: number) => {
+  const physicsStep = (dt: number) => {
     if (isResetting.current) return;
     const p = puck.current;
 
@@ -114,23 +102,22 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onScoreUpdate }) => 
     p.velocity.x *= friction;
     p.velocity.y *= friction;
 
-    // Goal Check
+    // Goals
     if (p.x > GOAL_LEFT_X && p.x < GOAL_RIGHT_X) {
-      if (p.y < -p.radius) { onScoreUpdate(gameState.score.player + 1, gameState.score.ai, 'player'); resetPositions('player'); return; }
-      if (p.y > CANVAS_HEIGHT + p.radius) { onScoreUpdate(gameState.score.player, gameState.score.ai + 1, 'ai'); resetPositions('ai'); return; }
+      if (p.y < -p.radius) { onScoreUpdate(gameState.score.player + 1, gameState.score.ai, 'player'); resetPuck('player'); return; }
+      if (p.y > CANVAS_HEIGHT + p.radius) { onScoreUpdate(gameState.score.player, gameState.score.ai + 1, 'ai'); resetPuck('ai'); return; }
     }
 
-    // Walls
+    // Walls with high-quality bounce
     if (p.x < p.radius) { p.x = p.radius; p.velocity.x = Math.abs(p.velocity.x) * WALL_ELASTICITY; }
     if (p.x > CANVAS_WIDTH - p.radius) { p.x = CANVAS_WIDTH - p.radius; p.velocity.x = -Math.abs(p.velocity.x) * WALL_ELASTICITY; }
     
-    // Top/Bottom walls (excluding goal)
     if (p.x < GOAL_LEFT_X || p.x > GOAL_RIGHT_X) {
       if (p.y < p.radius) { p.y = p.radius; p.velocity.y = Math.abs(p.velocity.y) * WALL_ELASTICITY; }
       if (p.y > CANVAS_HEIGHT - p.radius) { p.y = CANVAS_HEIGHT - p.radius; p.velocity.y = -Math.abs(p.velocity.y) * WALL_ELASTICITY; }
     }
 
-    // Goal Posts
+    // Circular Goal Posts
     const posts = [
       {x: GOAL_LEFT_X, y: 0}, {x: GOAL_RIGHT_X, y: 0},
       {x: GOAL_LEFT_X, y: CANVAS_HEIGHT}, {x: GOAL_RIGHT_X, y: CANVAS_HEIGHT}
@@ -139,70 +126,69 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onScoreUpdate }) => 
       const dx = p.x - post.x;
       const dy = p.y - post.y;
       const dist = Math.sqrt(dx*dx + dy*dy);
-      if (dist < p.radius + POST_RADIUS) {
-        const angle = Math.atan2(dy, dx);
-        p.x = post.x + Math.cos(angle) * (p.radius + POST_RADIUS + 0.1);
-        p.y = post.y + Math.sin(angle) * (p.radius + POST_RADIUS + 0.1);
-        const dot = p.velocity.x * Math.cos(angle) + p.velocity.y * Math.sin(angle);
-        p.velocity.x = (p.velocity.x - 2 * dot * Math.cos(angle)) * WALL_ELASTICITY;
-        p.velocity.y = (p.velocity.y - 2 * dot * Math.sin(angle)) * WALL_ELASTICITY;
+      const minP = p.radius + POST_RADIUS;
+      if (dist < minP) {
+        const nx = dx / dist;
+        const ny = dy / dist;
+        p.x = post.x + nx * (minP + 0.5);
+        p.y = post.y + ny * (minP + 0.5);
+        const dot = p.velocity.x * nx + p.velocity.y * ny;
+        p.velocity.x = (p.velocity.x - 2 * dot * nx) * WALL_ELASTICITY;
+        p.velocity.y = (p.velocity.y - 2 * dot * ny) * WALL_ELASTICITY;
       }
     });
+
+    resolvePaddleCollision(player.current, p);
+    resolvePaddleCollision(ai.current, p);
   };
 
   const updateAI = (dt: number) => {
     if (isResetting.current) return;
     const a = ai.current;
-    const pk = puck.current;
+    const p = puck.current;
     const { speedMultiplier, aggression } = gameState.aiStrategy;
 
     let tx = a.x;
     let ty = a.y;
     const homeX = CANVAS_WIDTH / 2;
-    const homeY = 180;
+    const homeY = 200;
 
-    // AI logic: If puck is in AI half, attack. Else, stay defensive.
-    if (pk.y < CANVAS_HEIGHT / 2) {
-      // Offensive
-      if (pk.y < a.y - 10) {
-        // Recover behind puck
-        tx = homeX; ty = 100;
-      } else {
-        // Track puck and push
-        const prediction = aggression * 8; // Look ahead
-        tx = pk.x + pk.velocity.x * prediction;
-        ty = pk.y + 15;
-      }
+    // Advanced Decision Logic
+    if (p.y < CANVAS_HEIGHT / 2) {
+      // Offensive / Predictive Targeting
+      const prediction = aggression * 10;
+      tx = p.x + p.velocity.x * prediction;
+      ty = p.y + 20;
+
+      // Ensure AI doesn't get stuck behind puck
+      if (p.y < a.y - 10) { tx = homeX; ty = 100; }
     } else {
-      // Defensive
-      tx = pk.x;
-      const guardOffset = (pk.y - CANVAS_HEIGHT / 2) * (aggression * 0.3);
-      ty = clamp(homeY + guardOffset, 80, CANVAS_HEIGHT * 0.45);
+      // Defensive Tracking
+      tx = p.x;
+      const offset = (p.y - CANVAS_HEIGHT / 2) * (aggression * 0.25);
+      ty = clamp(homeY + offset, 100, CANVAS_HEIGHT * 0.45);
     }
 
     const dx = tx - a.x;
     const dy = ty - a.y;
-    const d = Math.sqrt(dx*dx + dy*dy);
+    const dist = Math.sqrt(dx*dx + dy*dy);
     
-    // Steering force logic for smooth movement
-    const deadzone = 2;
-    if (d > deadzone) {
+    if (dist > 5) {
       const maxS = MAX_SPEED * 0.7 * speedMultiplier;
-      const targetVx = (dx / d) * maxS;
-      const targetVy = (dy / d) * maxS;
+      const targetVx = (dx / dist) * maxS;
+      const targetVy = (dy / dist) * maxS;
       
-      const lerp = 0.18 * dt;
+      const lerp = 0.22 * dt;
       a.velocity.x += (targetVx - a.velocity.x) * lerp;
       a.velocity.y += (targetVy - a.velocity.y) * lerp;
     } else {
-      a.velocity.x *= 0.7;
-      a.velocity.y *= 0.7;
+      a.velocity.x *= 0.8;
+      a.velocity.y *= 0.8;
     }
 
     a.x += a.velocity.x * dt;
     a.y += a.velocity.y * dt;
 
-    // Constraints
     a.x = clamp(a.x, a.radius, CANVAS_WIDTH - a.radius);
     a.y = clamp(a.y, a.radius, CANVAS_HEIGHT / 2 - a.radius);
   };
@@ -225,12 +211,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onScoreUpdate }) => 
 
     // Player Follow
     if (inputTarget.current && !isResetting.current) {
-      const p = player.current;
-      const lerp = 0.45 * dt;
-      p.velocity.x = (inputTarget.current.x - p.x) * lerp;
-      p.velocity.y = (inputTarget.current.y - p.y) * lerp;
-      p.x += p.velocity.x * dt;
-      p.y += p.velocity.y * dt;
+      const pl = player.current;
+      const lerp = 0.5 * dt;
+      pl.velocity.x = (inputTarget.current.x - pl.x) * lerp;
+      pl.velocity.y = (inputTarget.current.y - pl.y) * lerp;
+      pl.x += pl.velocity.x * dt;
+      pl.y += pl.velocity.y * dt;
     } else {
       player.current.velocity.x *= 0.8;
       player.current.velocity.y *= 0.8;
@@ -241,70 +227,66 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onScoreUpdate }) => 
 
     updateAI(dt);
 
-    // Multi-stepping for collision stability
-    const subSteps = 6;
+    // High-frequency sub-stepping for physics stability
+    const subSteps = 8;
     const stepDt = dt / subSteps;
     for (let i = 0; i < subSteps; i++) {
-      checkBoundaries(stepDt);
-      resolveCollision(player.current, puck.current);
-      resolveCollision(ai.current, puck.current);
+      physicsStep(stepDt);
     }
 
-    draw();
+    render();
     requestRef.current = requestAnimationFrame(update);
   };
 
-  const draw = () => {
+  const render = () => {
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
+    const ctx = canvas?.getContext('2d', { alpha: false });
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    
-    // Pitch
+    // Rink Base
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Grid pattern
+    // Center Lines
     ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1;
     for(let i=0; i<CANVAS_WIDTH; i+=100){ ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, CANVAS_HEIGHT); ctx.stroke(); }
     for(let i=0; i<CANVAS_HEIGHT; i+=100){ ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(CANVAS_WIDTH, i); ctx.stroke(); }
 
     // Rink Markings
-    ctx.strokeStyle = '#334155'; ctx.lineWidth = 6;
+    ctx.strokeStyle = '#334155'; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.moveTo(0, CANVAS_HEIGHT/2); ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT/2);
-    ctx.strokeStyle = '#ef4444'; ctx.stroke();
+    ctx.strokeStyle = '#ef444466'; ctx.stroke();
 
     ctx.beginPath(); ctx.arc(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, 160, 0, Math.PI*2);
-    ctx.strokeStyle = '#3b82f6'; ctx.stroke();
+    ctx.strokeStyle = '#3b82f644'; ctx.stroke();
 
     // Creases
-    ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(CANVAS_WIDTH/2, 0, 120, 0, Math.PI); ctx.stroke();
-    ctx.beginPath(); ctx.arc(CANVAS_WIDTH/2, CANVAS_HEIGHT, 120, Math.PI, 0); ctx.stroke();
+    ctx.strokeStyle = '#3b82f666'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(CANVAS_WIDTH/2, 0, 150, 0, Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(CANVAS_WIDTH/2, CANVAS_HEIGHT, 150, Math.PI, 0); ctx.stroke();
 
-    // Goals (Dark zones)
+    // Goal Visuals
     ctx.fillStyle = '#020617';
     ctx.fillRect(GOAL_LEFT_X, -50, GOAL_WIDTH, 50);
     ctx.fillRect(GOAL_LEFT_X, CANVAS_HEIGHT, GOAL_WIDTH, 50);
 
-    // Entities
-    const drawItem = (ent: Entity, col: string, glow: string) => {
-      ctx.shadowColor = glow; ctx.shadowBlur = 20;
-      ctx.beginPath(); ctx.arc(ent.x, ent.y, ent.radius, 0, Math.PI*2);
+    // Dynamic Entities
+    const drawEnt = (e: Entity, col: string, glow: string) => {
+      ctx.shadowColor = glow; ctx.shadowBlur = 25;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI*2);
       ctx.fillStyle = col; ctx.fill();
       ctx.shadowBlur = 0;
-      // Reflection highlight
-      ctx.beginPath(); ctx.arc(ent.x - ent.radius*0.3, ent.y - ent.radius*0.3, ent.radius*0.1, 0, Math.PI*2);
-      ctx.fillStyle = 'white'; ctx.fill();
+      // High-end shine
+      ctx.beginPath(); ctx.arc(e.x - e.radius*0.3, e.y - e.radius*0.3, e.radius*0.15, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fill();
     };
 
-    drawItem(puck.current, '#f8fafc', '#38bdf8');
-    drawItem(player.current, '#3b82f6', '#60a5fa');
-    drawItem(ai.current, '#ef4444', '#f87171');
+    drawEnt(puck.current, '#f8fafc', '#38bdf8');
+    drawEnt(player.current, '#3b82f6', '#60a5fa');
+    drawEnt(ai.current, '#ef4444', '#f87171');
 
-    // Posts
-    ctx.fillStyle = '#cbd5e1';
+    // Goal Posts
+    ctx.fillStyle = '#475569';
     [GOAL_LEFT_X, GOAL_RIGHT_X].forEach(x => {
       ctx.beginPath(); ctx.arc(x, 0, POST_RADIUS, 0, Math.PI*2); ctx.fill();
       ctx.beginPath(); ctx.arc(x, CANVAS_HEIGHT, POST_RADIUS, 0, Math.PI*2); ctx.fill();
@@ -313,10 +295,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onScoreUpdate }) => 
     if (goalOverlay) {
       ctx.save();
       ctx.translate(CANVAS_WIDTH/2, CANVAS_HEIGHT/2);
-      ctx.font = '900 80px Orbitron'; ctx.fillStyle = 'white';
+      ctx.font = '900 70px Orbitron'; ctx.fillStyle = 'white';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.shadowColor = 'black'; ctx.shadowBlur = 40;
-      ctx.fillText(goalOverlay.text, 0, 0);
+      ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 40;
+      ctx.fillText(goalOverlay, 0, 0);
       ctx.restore();
     }
   };

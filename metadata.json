@@ -1,5 +1,5 @@
 {
-  "name": "Gemini Ice Hockey",
-  "description": "A real-time air hockey game featuring a Gemini-powered AI opponent that adapts its strategy and provides dynamic commentary based on the game state.",
+  "name": "Air Hockey Classic",
+  "description": "A high-performance air hockey game with polished physics, mobile-friendly controls, and smart local AI difficulty modes.",
   "requestFramePermissions": []
 }

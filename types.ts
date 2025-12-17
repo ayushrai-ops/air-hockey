@@ -26,15 +26,14 @@ export interface GameState {
 }
 
 export interface AIStrategy {
-  speedMultiplier: number; // 0.5 to 1.5
-  aggression: number; // 0.0 (defensive) to 1.0 (aggressive)
-  reactionTime: number; // lower is better
+  speedMultiplier: number;
+  aggression: number;
+  reactionTime: number;
   name: string;
 }
 
 /**
- * Added GeminiResponse interface to resolve the import error.
- * Represents the structure of the AI Coach's response.
+ * Interface representing the structured response from the Gemini AI Coach.
  */
 export interface GeminiResponse {
   commentary: string;
