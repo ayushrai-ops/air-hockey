@@ -8,6 +8,25 @@
     <title>Air Hockey Classic</title>
     <!-- Favicon data URI to fix 404 error -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏒</text></svg>">
+    
+    <!-- Suppress Tailwind CDN production warning -->
+    <script>
+      (function() {
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const isTailwindWarning = (msg) => typeof msg === 'string' && msg.includes('cdn.tailwindcss.com');
+        
+        console.log = function(...args) {
+          if (isTailwindWarning(args[0])) return;
+          originalLog.apply(console, args);
+        };
+        console.warn = function(...args) {
+          if (isTailwindWarning(args[0])) return;
+          originalWarn.apply(console, args);
+        };
+      })();
+    </script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600;800&display=swap');
