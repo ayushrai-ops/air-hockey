@@ -2,19 +2,44 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gemini Ice Hockey</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Air Hockey Classic</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@400;500&display=swap');
-      body {
-        font-family: 'Roboto', sans-serif;
-        background-color: #0f172a; /* Slate 900 */
-        color: white;
-        overflow: hidden; /* Prevent scrolling on mobile during play */
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;900&display=swap');
+      
+      :root {
+        --app-height: 100%;
       }
+
+      html, body {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        background-color: #0f172a;
+        touch-action: none;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        color: white;
+        display: flex;
+        flex-direction: column;
+      }
+
       .font-display {
         font-family: 'Orbitron', sans-serif;
+      }
+
+      #root {
+        height: 100%;
+        width: 100%;
       }
     </style>
   <script type="importmap">

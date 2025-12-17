@@ -1,31 +1,22 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { GeminiResponse } from "../types";
 
-const apiKey = process.env.API_KEY || '';
+// Note: Gemini client is initialized using process.env.API_KEY directly as a named parameter.
+// We initialize inside the function to ensure the correct context and most recent API key state.
 
-// Initialize Gemini
-// Note: We create the client lazily or handle the missing key gracefully in the UI.
-const getClient = () => {
-  if (!apiKey) return null;
-  return new GoogleGenAI({ apiKey });
-};
-
+/**
+ * Fetches dynamic AI strategy adjustments and coach commentary based on game events.
+ * Uses the latest Gemini 3 Flash model for low-latency reasoning.
+ */
 export const fetchAIStrategy = async (
   playerScore: number,
   aiScore: number,
   currentCommentary: string,
   event: 'GOAL_PLAYER' | 'GOAL_AI' | 'GAME_START' | 'TIMEOUT'
 ): Promise<GeminiResponse> => {
-  const client = getClient();
-  if (!client) {
-    console.warn("API Key missing, returning default strategy.");
-    return {
-      commentary: "API Key missing. Using fallback logic.",
-      aiSpeed: 1.0,
-      aiAggression: 0.5,
-      aiReactionDelay: 0.1
-    };
-  }
+  // Initialize client with the mandatory named parameter and direct environment variable access.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
     You are an AI Ice Hockey Coach controlling the opponent bot.
@@ -41,8 +32,9 @@ export const fetchAIStrategy = async (
   `;
 
   try {
-    const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const response = await ai.models.generateContent({
+      // Use gemini-3-flash-preview for real-time interactive tasks.
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -59,15 +51,16 @@ export const fetchAIStrategy = async (
       }
     });
 
+    // Access the text property directly from the response object as per SDK guidelines.
     const text = response.text;
-    if (!text) throw new Error("No response text");
+    if (!text) throw new Error("No response text received from Gemini.");
     
     return JSON.parse(text) as GeminiResponse;
   } catch (error) {
     console.error("Gemini API Error:", error);
-    // Fallback if API fails
+    // Return safe fallback strategy parameters to ensure game continuity.
     return {
-      commentary: "System malfunction... rebooting strategy...",
+      commentary: "System glitch... rebooting tactics...",
       aiSpeed: 1.0,
       aiAggression: 0.5,
       aiReactionDelay: 0.1

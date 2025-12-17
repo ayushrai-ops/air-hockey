@@ -1,7 +1,7 @@
+
 export enum GameMode {
   ROOKIE = 'ROOKIE',
-  PRO = 'PRO',
-  GEMINI_ADAPTIVE = 'GEMINI_ADAPTIVE'
+  PRO = 'PRO'
 }
 
 export interface Vector2D {
@@ -32,6 +32,10 @@ export interface AIStrategy {
   name: string;
 }
 
+/**
+ * Added GeminiResponse interface to resolve the import error.
+ * Represents the structure of the AI Coach's response.
+ */
 export interface GeminiResponse {
   commentary: string;
   aiSpeed: number;
