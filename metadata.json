@@ -1,0 +1,5 @@
+{
+  "name": "Gemini Ice Hockey",
+  "description": "A real-time air hockey game featuring a Gemini-powered AI opponent that adapts its strategy and provides dynamic commentary based on the game state.",
+  "requestFramePermissions": []
+}
