@@ -1,31 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- Robust Console Interceptor to suppress Tailwind Play CDN production warnings -->
+    <script>
+      (function() {
+        const suppressStrings = ['cdn.tailwindcss.com', 'PostCSS plugin'];
+        const intercept = (method) => {
+          const original = console[method];
+          console[method] = function(...args) {
+            const shouldSuppress = args.some(arg => 
+              typeof arg === 'string' && suppressStrings.some(s => arg.includes(s))
+            );
+            if (!shouldSuppress) original.apply(console, args);
+          };
+        };
+        ['log', 'warn', 'info', 'debug'].forEach(intercept);
+      })();
+    </script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    
+    <!-- Modern mobile web app tags to fix deprecation warnings -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#020617">
+
     <title>Air Hockey Classic</title>
     <!-- Favicon data URI to fix 404 error -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏒</text></svg>">
-    
-    <!-- Suppress Tailwind CDN production warning -->
-    <script>
-      (function() {
-        const originalLog = console.log;
-        const originalWarn = console.warn;
-        const isTailwindWarning = (msg) => typeof msg === 'string' && msg.includes('cdn.tailwindcss.com');
-        
-        console.log = function(...args) {
-          if (isTailwindWarning(args[0])) return;
-          originalLog.apply(console, args);
-        };
-        console.warn = function(...args) {
-          if (isTailwindWarning(args[0])) return;
-          originalWarn.apply(console, args);
-        };
-      })();
-    </script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
