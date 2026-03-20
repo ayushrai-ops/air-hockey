@@ -63,7 +63,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onScoreUpdate }) => 
       const nx = dx / distance;
       const ny = dy / distance;
 
-      // Position correction to prevent tunneling/sticking
+      // Prevent tunneling
       const overlap = minDist - distance;
       pck.x += nx * (overlap + 1);
       pck.y += ny * (overlap + 1);
@@ -76,7 +76,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onScoreUpdate }) => 
       const velAlongNormal = relativeVelocity.x * nx + relativeVelocity.y * ny;
       if (velAlongNormal > 0) return;
 
-      const bounce = 1.15; // High performance bounce
+      const bounce = 1.15;
       const impulse = -(1 + bounce) * velAlongNormal / (1 / pdl.mass + 1 / pck.mass);
 
       pck.velocity.x += (impulse / pck.mass) * nx;
@@ -108,7 +108,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onScoreUpdate }) => 
       if (p.y > CANVAS_HEIGHT + p.radius) { onScoreUpdate(gameState.score.player, gameState.score.ai + 1, 'ai'); resetPuck('ai'); return; }
     }
 
-    // Walls with high-quality bounce
+    // Wall bounces
     if (p.x < p.radius) { p.x = p.radius; p.velocity.x = Math.abs(p.velocity.x) * WALL_ELASTICITY; }
     if (p.x > CANVAS_WIDTH - p.radius) { p.x = CANVAS_WIDTH - p.radius; p.velocity.x = -Math.abs(p.velocity.x) * WALL_ELASTICITY; }
     
@@ -153,9 +153,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onScoreUpdate }) => 
     const homeX = CANVAS_WIDTH / 2;
     const homeY = 200;
 
-    // Advanced Decision Logic
+    // AI logic
     if (p.y < CANVAS_HEIGHT / 2) {
-      // Offensive / Predictive Targeting
+      // Predictive targeting
       const prediction = aggression * 10;
       tx = p.x + p.velocity.x * prediction;
       ty = p.y + 20;
@@ -227,7 +227,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onScoreUpdate }) => 
 
     updateAI(dt);
 
-    // High-frequency sub-stepping for physics stability
+    // Physics sub-stepping for stability
     const subSteps = 8;
     const stepDt = dt / subSteps;
     for (let i = 0; i < subSteps; i++) {
@@ -276,7 +276,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onScoreUpdate }) => 
       ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI*2);
       ctx.fillStyle = col; ctx.fill();
       ctx.shadowBlur = 0;
-      // High-end shine
+      // Add shine effect
       ctx.beginPath(); ctx.arc(e.x - e.radius*0.3, e.y - e.radius*0.3, e.radius*0.15, 0, Math.PI*2);
       ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fill();
     };

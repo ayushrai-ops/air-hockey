@@ -1,20 +1,32 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Air Hockey Classic
 
-# Run and deploy your AI Studio app
+A high-performance HTML5 canvas Air Hockey game featuring adaptive AI powered by Gemini.
 
-This contains everything you need to run your app locally.
+## Tech Stack
+- React 19
+- HTML5 Canvas for rendering and physics
+- Tailwind CSS
+- Google Gemini API (for AI opponent behavior)
 
-View your app in AI Studio: https://ai.studio/apps/drive/15sBqsJ8faVUa6kQdXd0mHaYeFTIUPo6j
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+## Setup
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```bash
+npm install
+```
+
+2. Configure environment:
+Create a `.env.local` file and add your API key:
+```env
+GEMINI_API_KEY=your_api_key_here
+```
+
+3. Start dev server:
+```bash
+npm run dev
+```
+
+## Features
+- Custom physics engine with sub-stepping
+- Dynamic AI opponent that adapts to the score
+- Two modes: Rookie and Pro

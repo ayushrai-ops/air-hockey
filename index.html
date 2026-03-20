@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <!-- Robust Console Interceptor to suppress Tailwind Play CDN production warnings -->
+    <!-- Suppress Tailwind Play CDN warnings -->
     <script>
       (function() {
         const suppressStrings = ['cdn.tailwindcss.com', 'PostCSS plugin'];
@@ -21,14 +21,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     
-    <!-- Modern mobile web app tags -->
+    <!-- Mobile web app meta tags -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#020617">
 
     <title>Air Hockey Classic</title>
-    <!-- Favicon data URI to fix 404 error -->
+    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏒</text></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -46,7 +46,7 @@
         width: 100%;
         overflow: hidden;
         background-color: #020617;
-        /* Critical for mobile touch gaming */
+        /* Prevent mobile touch default actions */
         touch-action: none;
         -webkit-touch-callout: none;
         -webkit-user-select: none;

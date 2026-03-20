@@ -37,7 +37,7 @@ const App: React.FC = () => {
     }));
   };
 
-  // Handle scoring events and trigger dynamic AI strategy updates via Gemini API
+  // Handle scoring and update adaptive AI strategy
   const handleScoreUpdate = useCallback(async (newPlayerScore: number, newAiScore: number, scorer: 'player' | 'ai') => {
     if (newPlayerScore >= WIN_SCORE || newAiScore >= WIN_SCORE) {
         setGameState(prev => ({
@@ -56,7 +56,7 @@ const App: React.FC = () => {
       score: { player: newPlayerScore, ai: newAiScore }
     }));
 
-    // Fetch adaptive strategy and trash-talk/commentary from Gemini
+    // Generate adaptive strategy from Gemini
     const event = scorer === 'player' ? 'GOAL_PLAYER' : 'GOAL_AI';
     try {
       const geminiData = await fetchAIStrategy(newPlayerScore, newAiScore, gameState.commentary, event);
@@ -76,7 +76,7 @@ const App: React.FC = () => {
   }, [gameState.commentary]);
 
   const startGame = () => {
-    // Call Gemini on game start to set the tone and initial adaptive strategy
+    // Initialize Gemini strategy on game start
     const triggerStart = async () => {
       try {
         const geminiData = await fetchAIStrategy(0, 0, "Match Initiated", 'GAME_START');

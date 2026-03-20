@@ -2,12 +2,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { GeminiResponse } from "../types";
 
-// Note: Gemini client is initialized using process.env.API_KEY directly as a named parameter.
-// We initialize inside the function to ensure the correct context and most recent API key state.
-
 /**
- * Fetches dynamic AI strategy adjustments and coach commentary based on game events.
- * Uses the latest Gemini 3 Flash model for low-latency reasoning.
+ * Fetches dynamic AI strategy adjustments and coach commentary.
+ * Uses Gemini for reasoning.
  */
 export const fetchAIStrategy = async (
   playerScore: number,
@@ -15,7 +12,6 @@ export const fetchAIStrategy = async (
   currentCommentary: string,
   event: 'GOAL_PLAYER' | 'GOAL_AI' | 'GAME_START' | 'TIMEOUT'
 ): Promise<GeminiResponse> => {
-  // Initialize client with the mandatory named parameter and direct environment variable access.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
@@ -33,7 +29,6 @@ export const fetchAIStrategy = async (
 
   try {
     const response = await ai.models.generateContent({
-      // Use gemini-3-flash-preview for real-time interactive tasks.
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
@@ -51,14 +46,13 @@ export const fetchAIStrategy = async (
       }
     });
 
-    // Access the text property directly from the response object as per SDK guidelines.
     const text = response.text;
     if (!text) throw new Error("No response text received from Gemini.");
     
     return JSON.parse(text) as GeminiResponse;
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    // Return safe fallback strategy parameters to ensure game continuity.
+    console.error("API Error:", error);
+    // Fallback strategy
     return {
       commentary: "System glitch... rebooting tactics...",
       aiSpeed: 1.0,
